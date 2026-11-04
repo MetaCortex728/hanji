@@ -79,6 +79,22 @@ Vec3 snap_view_plane(const Vec3& point, const Vec3& origin, const ViewRotation& 
 /// feet stay on the floor.
 Vec3 snap_ground_anchor(const Vec3& foot, const Vec3& origin, const ViewRotation& view, double units_per_pixel);
 
+// ---------------------------------------------------------------- the sprite's quad
+
+/// How a sprite's quad stands in the world for a camera. `tilt_deg` leans the quad back from upright
+/// toward the camera: 0 stands it upright, so tall sprites keep upright depth and do not sink into walls
+/// behind them; the camera's downward pitch makes it face the camera. Values are clamped to that range.
+/// The quad's height is scaled by `height_scale` so a cell of a given pixel height covers the same screen
+/// height at every tilt.
+struct SpriteQuad {
+    Vec3 right;           ///< Screen right; width runs along it.
+    Vec3 up;              ///< Up along the quad from the ground pivot, unit length.
+    Vec3 normal;          ///< Toward the camera.
+    double height_scale;  ///< 1 / cos(pitch down - tilt).
+    double tilt_deg;      ///< The tilt actually used.
+};
+SpriteQuad sprite_quad(const ViewRotation& view, double tilt_deg);
+
 // ---------------------------------------------------------------- camera
 
 /// Frame-rate independent exponential follow with a half-life; zero half-life snaps.

@@ -148,6 +148,33 @@ TEST_CASE("view-plane snapping (prototype RenderPlaneSnap)") {
     CHECK(near(snap_view_plane(origin, {}, {0, 0, 0}, 0.0), origin, 0.0));
 }
 
+TEST_CASE("sprite quads keep their on-screen size at every tilt") {
+    for (double pitch : {-30.0, -35.0, -55.0})
+        for (double yaw : {0.0, 45.0, 137.0}) {
+            const ViewRotation view{pitch, yaw, 0.0};
+            const ViewBasis b = view_basis(view);
+            for (double tilt : {0.0, 10.0, -pitch / 2, -pitch, 80.0}) {
+                CAPTURE(pitch);
+                CAPTURE(yaw);
+                CAPTURE(tilt);
+                const SpriteQuad q = sprite_quad(view, tilt);
+                CHECK(q.tilt_deg <= -pitch + 1e-12);
+                CHECK(near(length(q.up), 1.0, 1e-12));
+                CHECK(near(dot(q.up, q.right), 0.0, 1e-12));
+                CHECK(near(dot(q.normal, q.up), 0.0, 1e-12));
+                // Width runs along screen right; the scaled height covers one screen unit of height.
+                CHECK(near(q.right, b.right, 1e-12));
+                CHECK(near(dot(q.up * q.height_scale, b.up), 1.0, 1e-12));
+                // The quad faces the camera side.
+                CHECK(dot(q.normal, b.forward) < 0.0);
+            }
+            // Upright stands vertical; full tilt faces the camera.
+            CHECK(near(sprite_quad(view, 0.0).up, Vec3{0, 0, 1}, 1e-12));
+            CHECK(near(sprite_quad(view, -pitch).up, b.up, 1e-12));
+            CHECK(near(sprite_quad(view, -pitch).height_scale, 1.0, 1e-12));
+        }
+}
+
 TEST_CASE("follow is frame-rate independent and never overshoots (prototype FollowTiming)") {
     const Vec3 start{-40, 20, 80}, target{160, 220, 180};
     CHECK(near(follow(start, target, 0.08, 0.08), (start + target) * 0.5, 1e-4));

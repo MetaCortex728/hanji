@@ -120,6 +120,24 @@ Vec3 snap_ground_anchor(const Vec3& foot, const Vec3& origin, const ViewRotation
     return result;
 }
 
+SpriteQuad sprite_quad(const ViewRotation& view, double tilt_deg) {
+    const ViewBasis b = view_basis(view);
+    const double pitch_down = std::clamp(-view.pitch_deg, 0.0, 89.0);
+    const double tilt = std::isfinite(tilt_deg) ? std::clamp(tilt_deg, 0.0, pitch_down) : 0.0;
+    // The horizontal direction the camera looks along; the quad leans back along it.
+    Vec3 ahead{b.forward.x, b.forward.y, 0.0};
+    const double ahead_len = std::sqrt(ahead.x * ahead.x + ahead.y * ahead.y);
+    ahead = ahead_len > 1e-12 ? ahead * (1.0 / ahead_len) : Vec3{1.0, 0.0, 0.0};
+    const double t = radians(tilt);
+    SpriteQuad q;
+    q.right = Vec3{-ahead.y, ahead.x, 0.0};
+    q.up = ahead * std::sin(t) + Vec3{0.0, 0.0, std::cos(t)};
+    q.normal = ahead * -std::cos(t) + Vec3{0.0, 0.0, std::sin(t)};
+    q.height_scale = 1.0 / std::cos(radians(pitch_down - tilt));
+    q.tilt_deg = tilt;
+    return q;
+}
+
 Vec3 follow(const Vec3& current, const Vec3& target, double dt_s, double half_life_s) {
     if (!(dt_s > 0.0)) return current;
     if (!(half_life_s > 0.0)) return target;
