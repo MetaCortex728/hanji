@@ -1,0 +1,21 @@
+{
+	"FileVersion": 3,
+	"EngineAssociation": "5.8",
+	"Category": "",
+	"Description": "Hanji's sample and test host. Builds the plugin from ../Hanji and runs its automation tests.",
+	"Modules": [
+		{
+			"Name": "HanjiSample",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	],
+	"Plugins": [
+		{ "Name": "Hanji", "Enabled": true },
+		{ "Name": "PythonScriptPlugin", "Enabled": true },
+		{ "Name": "EditorScriptingUtilities", "Enabled": true }
+	],
+	"AdditionalPluginDirectories": [
+		".."
+	]
+}

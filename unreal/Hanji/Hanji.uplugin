@@ -1,0 +1,19 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "0.1.0",
+	"FriendlyName": "Hanji",
+	"Description": "Runtime clock and 3D presentation for eight-direction sprite characters in a quarter-view world.",
+	"Category": "2D",
+	"CreatedBy": "Hanji authors",
+	"DocsURL": "https://github.com/MetaCortex728/hanji",
+	"CanContainContent": true,
+	"IsBetaVersion": true,
+	"Modules": [
+		{
+			"Name": "Hanji",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	]
+}
