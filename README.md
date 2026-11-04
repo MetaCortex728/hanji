@@ -2,7 +2,7 @@
 
 A runtime for eight-direction sprite characters in a 3D quarter-view world, for Unreal Engine 5.8. Hanji (한지) is Korean paper: the characters are flat, hand-finished images, and Hanji stands them up in a lit, three-dimensional scene and makes them behave in an action game.
 
-Status: foundation. The repository layout, licence, continuous integration for the engine-independent core, and the October 2026 prototype are in place. Nothing plays a sprite yet. See the [roadmap](ROADMAP.md) once it is added; the scope is summarised below.
+Status: Stage 1 of the [roadmap](ROADMAP.md) is done. The engine-independent core (data, clock, geometry) is tested in CI; the Unreal 5.8 plugin is built and tested locally and was measured in a vertical slice with a real character ([docs/unreal.md](docs/unreal.md#measurements)). Occluder fade, sorting, silhouettes, lit-sprite setup and PaperZD interop come next.
 
 ## What it does
 
@@ -22,7 +22,8 @@ Han wrote the first version of this runtime in October 2026 inside his own Unrea
 | Path | Content |
 |---|---|
 | `core/` | The engine-independent C++17 library: data (clip tables and readers), clock, geometry. Builds and tests on Linux and Windows without Unreal. |
-| `unreal/` | The Unreal Engine 5.8 plugin (to come): render component, material, camera, Blueprint API. |
+| `unreal/Hanji` | The Unreal Engine 5.8 plugin: clip-table asset, sprite component, update subsystem, camera, materials. See [docs/unreal.md](docs/unreal.md). |
+| `unreal/HanjiSample` | The project that builds the plugin and runs its automation tests (`unreal/hanji-unreal.ps1`). |
 | `prototype/` | The October 2026 files, unchanged. |
 | `docs/` | Design notes and provenance. |
 | `third_party/` | Vendored doctest and JSON for Modern C++, each with its licence; see [NOTICE](NOTICE). |
@@ -37,7 +38,9 @@ cmake --build --preset default
 ctest --preset default
 ```
 
-The Unreal plugin needs an installed Unreal Engine 5.8 and is built and tested locally; GitHub's runners have no Unreal, so continuous integration covers the core only.
+The Unreal plugin needs an installed Unreal Engine 5.8 and is built and tested locally with `unreal\hanji-unreal.ps1`; GitHub's runners have no Unreal, so continuous integration covers the core only.
+
+Documentation: [data](docs/data.md), [clock](docs/clock.md), [geometry](docs/geometry.md), [Unreal plugin](docs/unreal.md), [provenance](docs/provenance.md).
 
 ## Licence
 
