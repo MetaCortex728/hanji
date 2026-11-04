@@ -46,6 +46,8 @@ add_subdirectory(third_party)
 # builds and tests anywhere; the Unreal plugin under unreal/ wraps it.
 add_library(hanji_core STATIC
     core/src/clip.cpp
+    core/src/clock.cpp
+    core/src/policy.cpp
     core/src/readers.cpp
     core/src/version.cpp)
 add_library(hanji::core ALIAS hanji_core)

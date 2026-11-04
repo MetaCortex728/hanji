@@ -1,5 +1,7 @@
 add_executable(hanji_tests
     main.cpp
+    test_clock.cpp
+    test_policy.cpp
     test_readers.cpp
     test_version.cpp)
 target_link_libraries(hanji_tests PRIVATE
