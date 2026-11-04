@@ -1,0 +1,14 @@
+build/
+out/
+__pycache__/
+*.pyc
+compile_commands.json
+.cache/
+
+# Unreal plugin and sample project intermediates
+unreal/**/Binaries/
+unreal/**/Intermediate/
+unreal/**/Saved/
+unreal/**/DerivedDataCache/
+unreal/**/.vs/
+unreal/**/*.sln

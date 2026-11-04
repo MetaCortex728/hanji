@@ -1,2 +1,5 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# The October prototype is stored byte for byte so its hashes stay verifiable.
+prototype/** -text
