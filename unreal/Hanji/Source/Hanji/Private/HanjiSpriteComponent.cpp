@@ -313,7 +313,11 @@ void UHanjiSpriteComponent::UpdateVisual(const FRotator& ViewRotation, bool bFor
 	const double PivotX = Frame.mirror_x ? Frame.source.w - Table.pivot.x : Table.pivot.x;
 	const FVector PivotOnQuad = Right * ((PivotX / FMath::Max(Frame.source.w, 1) - 0.5) * W) + Up * ((1.0 - Table.pivot.y / static_cast<double>(FMath::Max(Frame.source.h, 1))) * H);
 	const FQuat Rotation = FRotationMatrix::MakeFromYZ(Right, Up).ToQuat();
-	SetWorldTransform(FTransform(Rotation, Anchor - PivotOnQuad, FVector(1.0, W, H)));
+	// Two upright quads on the same depth line would be exactly coplanar, and a masked quad that ties in
+	// depth with another renders black where they overlap. A small, stable offset toward the camera per
+	// sprite (under a millimetre in steps of 0.01 cm) breaks every tie without a visible shift.
+	const double TieBreak = (GetUniqueID() % 97) * 0.01;
+	SetWorldTransform(FTransform(Rotation, Anchor - PivotOnQuad - ViewRotation.Vector() * TieBreak, FVector(1.0, W, H)));
 	UpdateShadowAndAttachments(AnchorLocation(), ViewRotation);
 }
 

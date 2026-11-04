@@ -88,8 +88,9 @@ def make_material(name, unlit):
     size = node(m, unreal.MaterialExpressionComponentMask, -600, 320)
     for channel, on in (("r", False), ("g", False), ("b", True), ("a", True)):
         size.set_editor_property(channel, on)
-    MEL.connect_material_expressions(frame, "", offset, "")
-    MEL.connect_material_expressions(frame, "", size, "")
+    # A vector parameter's default output is RGB; the size needs B and A, so take the RGBA output.
+    MEL.connect_material_expressions(frame, "RGBA", offset, "")
+    MEL.connect_material_expressions(frame, "RGBA", size, "")
     scaled = node(m, unreal.MaterialExpressionMultiply, -400, 60)
     MEL.connect_material_expressions(cell_uv, "", scaled, "A")
     MEL.connect_material_expressions(size, "", scaled, "B")

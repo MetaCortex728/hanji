@@ -137,7 +137,10 @@ bool FHanjiPlacementTest::RunTest(const FString&)
 		Scene.Sprite->HanjiAdvance(0.0f, View);
 		const FVector Anchor = Scene.Actor->GetActorLocation();
 		const FVector Pivot = Scene.Sprite->GetPixelWorldLocation(FVector2D(12.0, 44.0));
-		TestTrue(FString::Printf(TEXT("Pivot pixel on the anchor at tilt %.0f"), Tilt), Pivot.Equals(Anchor, 1e-3));
+		// Within the depth tie-break (under 1 cm, along the view direction only).
+		const FVector Off = Pivot - Anchor;
+		TestTrue(FString::Printf(TEXT("Pivot pixel on the anchor at tilt %.0f"), Tilt),
+			Off.Size() < 1.0 && FVector::CrossProduct(Off, View.Vector()).Size() < 1e-3);
 
 		// The cell keeps its screen size: 32 px wide, 48 px high on screen at 2 cm per pixel.
 		const FRotationMatrix Basis(View);
@@ -151,7 +154,7 @@ bool FHanjiPlacementTest::RunTest(const FString&)
 		// Moving the actor moves the sprite; the pivot follows exactly.
 		Scene.Actor->SetActorLocation(Anchor + FVector(37.0, -11.0, 0.0));
 		Scene.Sprite->HanjiAdvance(0.0f, View);
-		TestTrue(TEXT("Pivot follows the actor"), Scene.Sprite->GetPixelWorldLocation(FVector2D(12.0, 44.0)).Equals(Scene.Actor->GetActorLocation(), 1e-3));
+		TestTrue(TEXT("Pivot follows the actor"), Scene.Sprite->GetPixelWorldLocation(FVector2D(12.0, 44.0)).Equals(Scene.Actor->GetActorLocation(), 1.0));
 	}
 	return true;
 }
@@ -249,6 +252,18 @@ bool FHanjiShadowAttachTest::RunTest(const FString&)
 	UDecalComponent* Shadow = Scene.Sprite->GetBlobShadow();
 	if (!TestNotNull(TEXT("A blob shadow is made"), Shadow)) return false;
 	TestTrue(TEXT("Under the pivot"), Shadow->GetComponentLocation().Equals(Scene.Actor->GetActorLocation(), 1e-3));
+
+	// Two sprites on the same depth line are never coplanar.
+	UHanjiSpriteComponent* Other = NewObject<UHanjiSpriteComponent>(Scene.Actor);
+	Other->ClipTable = Scene.Sprite->ClipTable;
+	Other->CentimetresPerPixel = 2.0f;
+	Other->bSnapToPixelGrid = false;
+	Other->SetupAttachment(Scene.Actor->GetRootComponent());
+	Other->RegisterComponent();
+	Other->HanjiAdvance(0.0f, View);
+	const double DepthA = FVector::DotProduct(Scene.Sprite->GetComponentLocation(), View.Vector());
+	const double DepthB = FVector::DotProduct(Other->GetComponentLocation(), View.Vector());
+	TestTrue(TEXT("Sprites at one anchor get different depths"), !FMath::IsNearlyEqual(DepthA, DepthB, 1e-4));
 	TestTrue(TEXT("Projecting down"), Shadow->GetForwardVector().Equals(FVector(0, 0, -1), 1e-4));
 	TestNotNull(TEXT("With the plugin's decal material"), Shadow->GetDecalMaterial());
 	TestFalse(TEXT("The sprite ignores decals"), Scene.Sprite->bReceivesDecals);
