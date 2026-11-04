@@ -47,6 +47,7 @@ add_subdirectory(third_party)
 add_library(hanji_core STATIC
     core/src/clip.cpp
     core/src/clock.cpp
+    core/src/geometry.cpp
     core/src/policy.cpp
     core/src/readers.cpp
     core/src/version.cpp)
