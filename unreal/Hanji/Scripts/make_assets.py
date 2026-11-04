@@ -110,7 +110,49 @@ def make_material(name, unlit):
     log("saved " + path + (" (unlit)" if unlit else " (lit)") + ", has pixel animation: " + str(m.get_editor_property("has_pixel_animation")))
 
 
+def make_blob_shadow():
+    """A deferred decal: black with a soft round falloff, scaled by the Opacity parameter."""
+    folder = "/Hanji/Materials"
+    name = "M_HanjiBlobShadow"
+    path = folder + "/" + name
+    fresh(path)
+    m = TOOLS.create_asset(name, folder, unreal.Material, unreal.MaterialFactoryNew())
+    m.set_editor_property("material_domain", unreal.MaterialDomain.MD_DEFERRED_DECAL)
+    m.set_editor_property("blend_mode", unreal.BlendMode.BLEND_TRANSLUCENT)
+    uv = node(m, unreal.MaterialExpressionTextureCoordinate, -900, 0)
+    centre = node(m, unreal.MaterialExpressionConstant2Vector, -900, 120)
+    centre.set_editor_property("r", 0.5)
+    centre.set_editor_property("g", 0.5)
+    dist = node(m, unreal.MaterialExpressionDistance, -700, 40)
+    MEL.connect_material_expressions(uv, "", dist, "A")
+    MEL.connect_material_expressions(centre, "", dist, "B")
+    two = node(m, unreal.MaterialExpressionMultiply, -550, 40)
+    two.set_editor_property("const_b", 2.0)
+    MEL.connect_material_expressions(dist, "", two, "A")
+    inside = node(m, unreal.MaterialExpressionOneMinus, -420, 40)
+    MEL.connect_material_expressions(two, "", inside, "")
+    clamp = node(m, unreal.MaterialExpressionSaturate, -300, 40)
+    MEL.connect_material_expressions(inside, "", clamp, "")
+    soft = node(m, unreal.MaterialExpressionPower, -180, 40)
+    soft.set_editor_property("const_exponent", 1.5)
+    MEL.connect_material_expressions(clamp, "", soft, "Base")
+    opacity = node(m, unreal.MaterialExpressionScalarParameter, -180, 180)
+    opacity.set_editor_property("parameter_name", "Opacity")
+    opacity.set_editor_property("default_value", 0.45)
+    alpha = node(m, unreal.MaterialExpressionMultiply, 0, 80)
+    MEL.connect_material_expressions(soft, "", alpha, "A")
+    MEL.connect_material_expressions(opacity, "", alpha, "B")
+    black = node(m, unreal.MaterialExpressionConstant3Vector, 0, -60)
+    black.set_editor_property("constant", unreal.LinearColor(0.0, 0.0, 0.0, 1.0))
+    MEL.connect_material_property(black, "", unreal.MaterialProperty.MP_BASE_COLOR)
+    MEL.connect_material_property(alpha, "", unreal.MaterialProperty.MP_OPACITY)
+    MEL.recompile_material(m)
+    EAL.save_asset(path, only_if_is_dirty=False)
+    log("saved " + path + " (decal)")
+
+
 make_quad()
+make_blob_shadow()
 make_material("M_HanjiSprite", unlit=False)
 make_material("M_HanjiSpriteUnlit", unlit=True)
 log("done")

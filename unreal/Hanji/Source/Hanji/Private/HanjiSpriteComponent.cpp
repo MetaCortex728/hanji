@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "HanjiSpriteComponent.h"
 
+#include "Components/DecalComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/Texture2D.h"
 #include "Engine/World.h"
@@ -55,6 +56,11 @@ void UHanjiSpriteComponent::OnUnregister()
 	if (bApplyHitStopToOwner && Player && Player->hit_stopped())
 	{
 		if (AActor* Owner = GetOwner()) Owner->CustomTimeDilation = 1.0f;
+	}
+	if (Shadow)
+	{
+		Shadow->DestroyComponent();
+		Shadow = nullptr;
 	}
 	Super::OnUnregister();
 }
@@ -308,4 +314,62 @@ void UHanjiSpriteComponent::UpdateVisual(const FRotator& ViewRotation, bool bFor
 	const FVector PivotOnQuad = Right * ((PivotX / FMath::Max(Frame.source.w, 1) - 0.5) * W) + Up * ((1.0 - Table.pivot.y / static_cast<double>(FMath::Max(Frame.source.h, 1))) * H);
 	const FQuat Rotation = FRotationMatrix::MakeFromYZ(Right, Up).ToQuat();
 	SetWorldTransform(FTransform(Rotation, Anchor - PivotOnQuad, FVector(1.0, W, H)));
+	UpdateShadowAndAttachments(AnchorLocation(), ViewRotation);
+}
+
+void UHanjiSpriteComponent::AttachToPixel(USceneComponent* Component, FVector2D Pixel, float DepthBias)
+{
+	if (!Component) return;
+	DetachFromPixel(Component);
+	Component->SetUsingAbsoluteLocation(true);
+	Attachments.Add({Component, Pixel, DepthBias});
+	UpdateShadowAndAttachments(AnchorLocation(), LastView);
+}
+
+void UHanjiSpriteComponent::DetachFromPixel(USceneComponent* Component)
+{
+	Attachments.RemoveAll([Component](const FPixelAttachment& A) { return !A.Component.IsValid() || A.Component.Get() == Component; });
+}
+
+void UHanjiSpriteComponent::UpdateShadowAndAttachments(const FVector& Anchor, const FRotator& ViewRotation)
+{
+	if (!Player || !Player->action()) return;
+	const hanji::Frame& Frame = Player->current();
+
+	// Effects on pixels: the pixel as drawn, mirrored with the frame, then nudged toward the camera.
+	const FVector Toward = -ViewRotation.Vector();
+	for (int32 I = Attachments.Num() - 1; I >= 0; --I)
+	{
+		USceneComponent* C = Attachments[I].Component.Get();
+		if (!C) { Attachments.RemoveAtSwap(I); continue; }
+		FVector2D Pixel = Attachments[I].Pixel;
+		if (Frame.mirror_x) Pixel.X = Frame.source.w - Pixel.X;
+		C->SetWorldLocation(GetPixelWorldLocation(Pixel) + Toward * Attachments[I].DepthBias);
+	}
+
+	// The blob shadow: a decal projected down onto whatever is under the pivot. Sprites ignore decals.
+	if (bBlobShadow && !Shadow && GetOwner() && GetWorld())
+	{
+		Shadow = NewObject<UDecalComponent>(GetOwner(), NAME_None, RF_Transient);
+		if (UMaterialInterface* Base = LoadObject<UMaterialInterface>(nullptr, UHanjiAssetLibrary::BlobMaterialPath))
+		{
+			UMaterialInstanceDynamic* M = UMaterialInstanceDynamic::Create(Base, Shadow);
+			M->SetScalarParameterValue(TEXT("Opacity"), BlobShadowOpacity);
+			Shadow->SetDecalMaterial(M);
+		}
+		Shadow->SetUsingAbsoluteLocation(true);
+		Shadow->SetUsingAbsoluteRotation(true);
+		Shadow->SetUsingAbsoluteScale(true);
+		Shadow->SetupAttachment(GetAttachParent() ? GetAttachParent() : this);
+		Shadow->RegisterComponent();
+	}
+	if (Shadow)
+	{
+		Shadow->SetVisibility(bBlobShadow);
+		const double Radius = BlobShadowRadius > 0.0f ? BlobShadowRadius : Frame.source.w * PixelSize() / 3.0;
+		// Decals project along their X axis: point it down; 30 cm deep reaches floors a little below the pivot.
+		Shadow->DecalSize = FVector(30.0, Radius, Radius);
+		Shadow->SetWorldLocationAndRotation(Anchor, FRotator(-90.0, 0.0, 0.0));
+		Shadow->MarkRenderStateDirty();
+	}
 }

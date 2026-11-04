@@ -7,6 +7,7 @@
 
 class UHanjiClipTable;
 class UMaterialInstanceDynamic;
+class UDecalComponent;
 namespace hanji { class Player; struct StatePolicy; }
 
 /** A hitbox of the frame shown, in world space on the sprite's quad. */
@@ -81,6 +82,18 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hanji")
 	bool bSnapToPixelGrid = true;
 
+	/** Projects a soft round shadow onto the ground under the pivot (a decal, so it never covers the sprite),
+	 *  independent of the scene's shadow method. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hanji|Shadow")
+	bool bBlobShadow = true;
+
+	/** Radius of the blob shadow in centimetres; 0 uses a third of the cell width. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hanji|Shadow", meta = (ClampMin = "0"))
+	float BlobShadowRadius = 0.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hanji|Shadow", meta = (ClampMin = "0", ClampMax = "1"))
+	float BlobShadowOpacity = 0.45f;
+
 	/** During hit-stop, also set the owner's CustomTimeDilation so its movement and timers follow. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hanji")
 	bool bApplyHitStopToOwner = true;
@@ -134,6 +147,19 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Hanji")
 	FVector GetPixelWorldLocation(FVector2D Pixel) const;
 
+	/**
+	 * Keeps a component (an effect, a weapon trail, a light) on a pixel of the cell, given as drawn in the
+	 * unmirrored art: when a heading is drawn mirrored the pixel follows the mirror, and when the heading
+	 * changes the component follows the sprite. DepthBias moves it toward the camera, in front of the sprite.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Hanji")
+	void AttachToPixel(USceneComponent* Component, FVector2D Pixel, float DepthBias = 2.0f);
+
+	UFUNCTION(BlueprintCallable, Category = "Hanji")
+	void DetachFromPixel(USceneComponent* Component);
+
+	UDecalComponent* GetBlobShadow() const { return Shadow; }
+
 	/** Advances the clock and updates the quad. Called by UHanjiSubsystem; call it yourself only in tests. */
 	void HanjiAdvance(float DeltaSeconds, const FRotator& ViewRotation);
 
@@ -162,6 +188,18 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UMaterialInstanceDynamic> Material;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UDecalComponent> Shadow;
+
+	struct FPixelAttachment
+	{
+		TWeakObjectPtr<USceneComponent> Component;
+		FVector2D Pixel;
+		float DepthBias = 0.0f;
+	};
+	TArray<FPixelAttachment> Attachments;
+	void UpdateShadowAndAttachments(const FVector& Anchor, const FRotator& ViewRotation);
 
 	FRotator LastView = FRotator(-30.0, 45.0, 0.0);
 	FVector LastFacing = FVector::ZeroVector;

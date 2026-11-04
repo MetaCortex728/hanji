@@ -37,6 +37,12 @@ function Invoke-Build {
 
 function Invoke-Assets {
     $script = Join-Path $here 'Hanji\Scripts\make_assets.py'
+    # The script recreates every generated asset; remove them first, because an asset still loaded in
+    # memory cannot be recreated under the same name by an unattended editor.
+    foreach ($generated in @('Meshes\SM_HanjiQuad.uasset', 'Materials\M_HanjiSprite.uasset', 'Materials\M_HanjiSpriteUnlit.uasset', 'Materials\M_HanjiBlobShadow.uasset')) {
+        $file = Join-Path $here "Hanji\Content\$generated"
+        if (Test-Path $file) { Remove-Item $file }
+    }
     $log = Join-Path $saved 'HanjiAssets.log'
     & $editor $project -run=pythonscript "-script=$script" -unattended -nop4 -nosplash -NoSound -noxgeshadercompile "-abslog=$log"
     if ($LASTEXITCODE -ne 0) { throw "Asset script failed ($LASTEXITCODE); see $log" }

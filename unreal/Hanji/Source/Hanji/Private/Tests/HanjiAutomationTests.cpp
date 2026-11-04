@@ -8,7 +8,10 @@
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
 #include "GameFramework/Actor.h"
+#include "Camera/CameraComponent.h"
+#include "Components/DecalComponent.h"
 #include "HanjiAssetLibrary.h"
+#include "HanjiCamera.h"
 #include "HanjiClipTable.h"
 #include "HanjiSpriteComponent.h"
 #include "HanjiSubsystem.h"
@@ -234,6 +237,63 @@ bool FHanjiSubsystemTest::RunTest(const FString&)
 	Subsystem->SetViewRotation(FRotator(-30.0, 45.0, 0.0));
 	Subsystem->Tick(0.25f);
 	TestEqual(TEXT("The subsystem advanced the sprite"), Scene.Sprite->GetFrame(), 1);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FHanjiShadowAttachTest, "Hanji.Sprite.ShadowAndPixelAttachments", HanjiTests::Flags)
+bool FHanjiShadowAttachTest::RunTest(const FString&)
+{
+	HanjiTests::FScene Scene(HanjiTests::MakeTable());
+	const FRotator View(-30.0, 45.0, 0.0);
+	Scene.Sprite->HanjiAdvance(0.0f, View);
+	UDecalComponent* Shadow = Scene.Sprite->GetBlobShadow();
+	if (!TestNotNull(TEXT("A blob shadow is made"), Shadow)) return false;
+	TestTrue(TEXT("Under the pivot"), Shadow->GetComponentLocation().Equals(Scene.Actor->GetActorLocation(), 1e-3));
+	TestTrue(TEXT("Projecting down"), Shadow->GetForwardVector().Equals(FVector(0, 0, -1), 1e-4));
+	TestNotNull(TEXT("With the plugin's decal material"), Shadow->GetDecalMaterial());
+	TestFalse(TEXT("The sprite ignores decals"), Scene.Sprite->bReceivesDecals);
+
+	USceneComponent* Spark = NewObject<USceneComponent>(Scene.Actor);
+	Spark->SetupAttachment(Scene.Actor->GetRootComponent());
+	Spark->RegisterComponent();
+	Scene.Sprite->AttachToPixel(Spark, FVector2D(27.0, 13.0), 0.0f);
+	TestTrue(TEXT("The effect sits on its pixel"), Spark->GetComponentLocation().Equals(Scene.Sprite->GetPixelWorldLocation(FVector2D(27.0, 13.0)), 1e-3));
+	Scene.Sprite->HanjiAdvance(0.0f, View);
+	Scene.Actor->SetActorLocation(Scene.Actor->GetActorLocation() + FVector(40.0, 0.0, 0.0));
+	Scene.Sprite->HanjiAdvance(0.0f, View);
+	TestTrue(TEXT("and follows the sprite"), Spark->GetComponentLocation().Equals(Scene.Sprite->GetPixelWorldLocation(FVector2D(27.0, 13.0)), 1e-3));
+	Scene.Sprite->AttachToPixel(Spark, FVector2D(27.0, 13.0), 5.0f);
+	const FVector Bias = Spark->GetComponentLocation() - Scene.Sprite->GetPixelWorldLocation(FVector2D(27.0, 13.0));
+	TestTrue(TEXT("Depth bias moves it toward the camera"), Bias.Equals(-View.Vector() * 5.0, 1e-3));
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FHanjiCameraTest, "Hanji.Camera.ZoomStepsAndPixelSnap", HanjiTests::Flags)
+bool FHanjiCameraTest::RunTest(const FString&)
+{
+	HanjiTests::FScene Scene(HanjiTests::MakeTable());
+	AHanjiCamera* Camera = Scene.World->SpawnActor<AHanjiCamera>();
+	Camera->SetFollowTarget(Scene.Actor);
+	Camera->SnapToTarget();
+	TestTrue(TEXT("Starts at 100 %"), FMath::IsNearlyEqual(Camera->GetZoom(), 1.0f));
+	Camera->SetZoomStep(2);
+	for (int32 I = 0; I < 60; ++I) Camera->Step(1.0f / 60.0f);
+	TestTrue(TEXT("Settles exactly at 110 %"), Camera->GetZoom() == 1.1f || FMath::IsNearlyEqual(Camera->GetZoom(), 1.1f, 1e-6f));
+	TestTrue(TEXT("A screen pixel grows with the view"), FMath::IsNearlyEqual(Camera->GetWorldPerPixel(), 1850.0f * 1.1f / 640.0f, 1e-3f));
+
+	// The rendered camera position lies on the screen-pixel lattice while the focus stays continuous.
+	Scene.Actor->SetActorLocation(FVector(123.4, -56.7, 10.0));
+	for (int32 I = 0; I < 10; ++I) Camera->Step(1.0f / 60.0f);
+	const FRotationMatrix Basis(Camera->ViewRotation);
+	const FVector Shown = Camera->GetActorLocation() + Camera->ViewRotation.Vector() * Camera->Distance;
+	for (const EAxis::Type Axis : {EAxis::Y, EAxis::Z})
+	{
+		const double Pixel = FVector::DotProduct(Shown, Basis.GetUnitAxis(Axis)) / Camera->GetWorldPerPixel();
+		TestTrue(TEXT("Camera on the pixel lattice"), FMath::IsNearlyEqual(Pixel, FMath::RoundToDouble(Pixel), 1e-4));
+	}
+	TestTrue(TEXT("Orthographic width follows the zoom"), FMath::IsNearlyEqual(Camera->GetCameraComponent()->OrthoWidth, 1850.0f * 1.1f, 1e-2f));
+	Camera->CycleZoom();
+	TestEqual(TEXT("Zoom steps wrap"), Camera->GetZoomStep(), 0);
 	return true;
 }
 

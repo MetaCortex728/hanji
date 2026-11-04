@@ -12,3 +12,4 @@ unreal/**/Saved/
 unreal/**/DerivedDataCache/
 unreal/**/.vs/
 unreal/**/*.sln
+unreal/HanjiSample/Config/DefaultInput.ini

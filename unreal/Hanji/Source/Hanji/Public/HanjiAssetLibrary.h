@@ -18,6 +18,7 @@ public:
 	static constexpr const TCHAR* QuadMeshPath = TEXT("/Hanji/Meshes/SM_HanjiQuad.SM_HanjiQuad");
 	static constexpr const TCHAR* LitMaterialPath = TEXT("/Hanji/Materials/M_HanjiSprite.M_HanjiSprite");
 	static constexpr const TCHAR* UnlitMaterialPath = TEXT("/Hanji/Materials/M_HanjiSpriteUnlit.M_HanjiSpriteUnlit");
+	static constexpr const TCHAR* BlobMaterialPath = TEXT("/Hanji/Materials/M_HanjiBlobShadow.M_HanjiBlobShadow");
 
 	/**
 	 * The sprite quad: one unit wide (local Y from -0.5 to 0.5) and one unit high (local Z from 0 to 1),
