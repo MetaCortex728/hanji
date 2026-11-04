@@ -110,6 +110,7 @@ bool Player::play(std::string_view name, const PlayOptions& options) {
     last_fired_ = static_cast<long long>(std::floor(start_offset_ + kEpsilon)) - 1;
     ++play_id_;
     events_.clear();
+    held_frame_ = -1;
     fire_through(position());
     return true;
 }
@@ -143,6 +144,8 @@ void Player::fire_through(double pos) {
 
 void Player::advance(double real_dt_s, double moved_cm) {
     events_.clear();
+    held_frame_ = -1;
+    const long long before = last_fired_;
     if (action_ == nullptr || !std::isfinite(real_dt_s) || real_dt_s < 0.0) return;
     // Split the step into the part under hit-stop and the part after it.
     const double stopped = std::min(real_dt_s, stop_remaining_s_);
@@ -165,6 +168,10 @@ void Player::advance(double real_dt_s, double moved_cm) {
         distance_cm_ += travel;
     }
     fire_through(position());
+    // Hold the contact frame for the advance that crossed its start, if time already ran past it.
+    if (action_->has_contact() && !action_->loop && action_->cycle_cm <= 0.0 && before < action_->contact_frame &&
+        last_fired_ >= action_->contact_frame)
+        held_frame_ = action_->contact_frame;
 }
 
 void Player::hit_stop(const HitStopPolicy& policy) {
@@ -185,6 +192,7 @@ void Player::hit_stop(const HitStopPolicy& policy) {
 
 int Player::frame() const {
     if (action_ == nullptr) return 0;
+    if (held_frame_ >= 0) return held_frame_;
     const int count = action_->frame_count();
     long long n = static_cast<long long>(std::floor(position() + kEpsilon));
     const bool cyclic = action_->loop || action_->cycle_cm > 0.0;

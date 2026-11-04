@@ -145,6 +145,22 @@ TEST_CASE("player: re-timed actions raise the contact event on the first active 
     }
 }
 
+TEST_CASE("player: a fast attack still draws its contact frame on the first active tick") {
+    // At 2x the startup ends at 2.5 ticks; the tick that crosses it lands a third into the active window.
+    const ClipTable table = make_table({make_action("jab", {17, 17, 17, 17, 17, 17, 17, 17, 17, 17}, false, 5, 9)});
+    Player p(table);
+    PlayOptions o;
+    o.timing = GameplayTiming{5.0 / 60.0 / 2.0, 4.0 / 60.0 / 2.0, 1.0 / 60.0 / 2.0};
+    REQUIRE(p.play("jab", o));
+    p.advance(1.0 / 60.0);
+    p.advance(1.0 / 60.0);
+    CHECK(p.frame() < 5);
+    p.advance(1.0 / 60.0);
+    CHECK(p.frame() == 5);  // held for the crossing tick
+    p.advance(1.0 / 60.0);
+    CHECK(p.frame() > 5);   // and then time catches up
+}
+
 TEST_CASE("player: hit-stop freezes the clock, never re-fires events, and restores itself") {
     const ClipTable table = make_table({make_action("jab", {100, 100, 100, 100}, false, 1, 2, 0.0,
                                                     {{1, {"hit"}}, {2, {"recover"}}})});

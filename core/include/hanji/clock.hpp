@@ -95,7 +95,10 @@ public:
     const std::vector<FiredEvent>& events() const { return events_; }  ///< Fired by the last advance().
     const Action* action() const { return action_; }
     Heading heading() const { return heading_; }
-    int frame() const;                    ///< Frame shown, 0..count-1.
+    /// Frame shown, 0..count-1. When an advance crosses the start of the contact frame, that advance shows
+    /// the contact frame even if the time is already past it, so the frame the art exaggerates is drawn
+    /// on the first active tick at any attack speed, with its boxes. Events still fire exactly once.
+    int frame() const;
     const Frame& current() const;         ///< The frame shown, in the current heading.
     double phase() const;                 ///< 0..1 through the cycle (loops and distance), or the one-shot.
     bool finished() const;                ///< A one-shot reached its end; it holds its last frame.
@@ -125,6 +128,7 @@ private:
     double stop_remaining_s_ = 0.0;
     double stop_scale_ = 1.0;
     std::vector<FiredEvent> events_;
+    int held_frame_ = -1;  // the contact frame, shown for the advance that crossed its start
 };
 
 }  // namespace hanji
