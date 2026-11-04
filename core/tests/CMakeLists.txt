@@ -1,5 +1,6 @@
 add_executable(hanji_tests
     main.cpp
+    test_readers.cpp
     test_version.cpp)
 target_link_libraries(hanji_tests PRIVATE
     hanji::core hanji_doctest hanji_json hanji_options)
