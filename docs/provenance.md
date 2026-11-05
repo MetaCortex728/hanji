@@ -31,14 +31,38 @@ All 18 files were created on 19 and 20 October 2026. Eleven were last written on
 
 ## The assistant's session records
 
-OpenAI Codex keeps a local record of each session with every file edit and command. A request to extract the entries for these 18 files up to the invitation, replay the recorded edits and compare the resulting hashes with the table above was made on 4 November 2026. This section will hold the result: sessions, first and last writes per file, replayed hashes, and recorded builds and automation test runs. Until then, the filesystem times above are the only dated evidence on this page.
+OpenAI Codex keeps a local record of each session with every file edit and command. On 4 November 2026 the assistant read the October segments of the session in which this code was written (`01a13efd-4a4b-7283-a42c-728222aa7224`), counted only entries before the invitation (29 October 2026, 19:30 UTC), replayed every recorded edit to the 18 files and hashed the result; on 5 November it re-read the files' times and hashes. [`provenance/session-records.json`](provenance/session-records.json) lists all 178 recorded edits and 19 recorded builds and test runs, with session line numbers and call ids. It holds no source code, conversation text or local paths.
 
-## Server-side timestamps
+| File | First recorded write | Last recorded write before the invitation | Replay up to the invitation vs the file here |
+|---|---|---|---|
+| `QuarterView/QuarterViewMath.h` | 2026-10-19 03:44:20 | 2026-10-20 10:44:11 | same SHA-256 |
+| `QuarterView/QuarterViewCamera.h` | 2026-10-19 03:44:20 | 2026-10-19 14:35:30 | same SHA-256 |
+| `QuarterView/QuarterViewCamera.cpp` | 2026-10-19 03:44:20 | 2026-10-19 14:46:27 | same SHA-256 |
+| `QuarterView/QuarterViewLab.h` | 2026-10-19 03:44:20 | 2026-10-28 13:36:36 | differs |
+| `QuarterView/QuarterViewLab.cpp` | 2026-10-19 03:44:20 | 2026-10-21 03:04:22 | not reconstructable (an edit's content is not fully recorded) |
+| `QuarterView/PixelProbe.h` | 2026-10-19 04:36:31 | 2026-10-21 08:44:19 | differs; the file was edited again on 30 October |
+| `QuarterView/PixelProbe.cpp` | 2026-10-19 04:36:31 | 2026-10-21 08:44:19 | differs; the file was edited again on 30 October |
+| `QuarterView/PoseAtlas.h` | 2026-10-19 06:02:22 | 2026-10-21 08:46:38 | not reconstructable; edited again on 30 October |
+| `QuarterView/StrideClock.h` | 2026-10-19 06:44:23 | 2026-10-20 00:22:25 | same SHA-256 |
+| `QuarterView/NormalProbe.cpp` | 2026-10-19 22:46:08 | 2026-10-19 23:19:36 | same SHA-256 |
+| `QuarterView/StudyLighting.h` | 2026-10-20 03:35:57 | 2026-10-20 03:35:57 | same SHA-256 |
+| `QuarterView/LocomotionStop.h` | 2026-10-20 16:19:38 | 2026-10-20 19:25:40 | same SHA-256 |
+| `QuarterView/PlayerOcclusion.cpp` | 2026-10-20 17:34:41 | 2026-10-20 17:44:31 | same SHA-256 |
+| `Opening/ContactShadow.h` | 2026-10-20 00:40:37 | 2026-10-20 00:40:37 | same SHA-256 |
+| `Opening/ContactShadow.cpp` | 2026-10-20 00:40:37 | 2026-10-20 00:40:37 | same SHA-256 |
+| `Tests/QuarterViewCameraTests.cpp` | 2026-10-19 03:44:20 | 2026-10-20 10:44:11 | same SHA-256 |
+| `Tests/PoseAtlasTests.cpp` | 2026-10-19 06:03:42 | 2026-10-21 08:47:10 | not reconstructable; edited again on 30 October |
+| `Tests/ContactShadowTests.cpp` | 2026-10-20 00:40:37 | 2026-10-20 05:13:20 | same SHA-256 |
 
-None located yet for this code. A negative result of a limited search, not a statement that none exists.
+For 12 of the 18 files, replaying the recorded edits reproduces the file in this repository byte for byte. Of the other six, four were changed again on 30 October, after the invitation, which a replay up to the invitation cannot reproduce (for two of them an earlier edit's content is also not fully recorded); for `QuarterViewLab.cpp` an edit's content is not fully recorded; and for `QuarterViewLab.h` the replay differs although its last recorded edit is before the invitation, for a reason this page does not establish. Each first write in the records comes about one second before the file's creation time on disk (for example `QuarterViewMath.h`: 03:44:20 in the record, 03:44:21 on disk).
+
+The records also hold 19 builds and automation test runs before the invitation, from 19 to 29 October: 13 report success (including four automation passes on 19, 19, 21 and 28 October) and 6 report failure, as the code was being written. A success marker shows that a build or test step ran; it does not show which files that run compiled.
 
 ## What this shows, and what it does not
 
-- **The hashes show** that the files in `prototype/` are the files in the game module as of 4 November 2026. They do not show when those files were written.
-- **The filesystem times show** creation on 19 and 20 October and continued edits to 30 October. They are local records.
-- **Nothing here yet** is independent of Han's PC.
+- **The hashes show** that the files in `prototype/` are the files in the game module as of 4 November 2026; a recheck on 5 November found them unchanged. They do not show when those files were written.
+- **The session records show** each file being created on 19 or 20 October and edited until 21 October (one file until 28 October), with builds and test runs along the way. For 12 files the replayed edits reproduce the file here byte for byte. The records are local to Han's PC: harder to fake consistently than a file time, but not independent of the PC.
+- **The filesystem times** agree with the session records to within about a second. They are local too.
+- **No server-side timestamp** was searched for in this round. That is a gap in the evidence, not a statement that none exists.
+
+The full session records and a live comparison can be shown to anyone who wants to check beyond this page.
